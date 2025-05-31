@@ -12,6 +12,7 @@ with open(config_path, 'r') as file:
 class ClassifierText:
     label: str
     score: float
+    name: str
     
 def load_model():
     model_hf = pipeline(config['task'], model=config['model'], device=-1)
@@ -21,7 +22,8 @@ def load_model():
         pred_best_class = pred[0]
         return ClassifierText(
             label=pred_best_class['label'],
-            score=pred_best_class['score']
+            score=pred_best_class['score'],
+            name=config['model']
         )
     
     return model
