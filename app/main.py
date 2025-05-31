@@ -32,10 +32,10 @@ def startup_event():
 @app.get('/analyze', response_model=SentimentResponse)
 def predict_model(text: str):
     predict = model(text)
-    
-    response = SentimentResponse(
-        text=text,
-        sentiment_label=predict.label,
-        sentiment_score=predict.score
-    )
-    return response
+    print(predict, predict.label, predict.score)
+    # response = SentimentResponse(
+    #     text=text,
+    #     sentiment_label=predict.label,
+    #     sentiment_score=predict.score
+    # )
+    # return response
