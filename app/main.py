@@ -5,14 +5,22 @@ from pydantic import BaseModel
 
 model = None
 
+class TextRequest(BaseModel):
+    text: str
+
 class SentimentResponse(BaseModel):
     text: str
     sentiment_label: str
     sentiment: float
+    
+class ModelStatus(BaseModel):
+    status: str
+    model_name: str
+    error: str = None
 
 app = FastAPI()
 
-@app.get('/')
+@app.get('/status', response_model=ModelStatus)
 def index():
     return {'text': 'somthing'}
 
@@ -21,7 +29,7 @@ def startup_event():
     global model
     model = load_model()
     
-@app.get('/predict')
+@app.get('/analyze', response_model=SentimentResponse)
 def predict_model(text: str):
     predict = model(text)
     
