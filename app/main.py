@@ -29,7 +29,7 @@ def startup_event():
     global model
     model = load_model()
     
-@app.get('/analyze', response_model=SentimentResponse)
+@app.get('/analyze')
 def predict_model(text: str):
     predict = model(text)
     print(predict, predict.label, predict.score)
