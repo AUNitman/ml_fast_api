@@ -2,13 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict
 
-import uuid
-
 from ml.model import load_model
-
-model = None
-
-result_storage: Dict[str, dict] = {}
 
 class SentimentResponse(BaseModel):
     text: str
@@ -16,9 +10,12 @@ class SentimentResponse(BaseModel):
     confidence: float
     
 class ModelStatus(BaseModel):
-    status: str
-    model_name: str
+    status: str = 'completed'
+    result_id: str
 
+model = None
+
+response_storage: Dict[str, SentimentResponse] = {}
 app = FastAPI(
     title='Classifiret Text'
 )
@@ -31,9 +28,13 @@ def startup_event():
     except Exception as e:
         raise RuntimeError(f'Error to load model: {str(e)}')
     
-@app.post('/submit', response_model=SentimentResponse)
+@app.post('/submit', response_model=ModelStatus, summary='Узнать тональность введенного  текста')
 async def predict_model(text: str):
+    '''
+    **text**: текст, тональность которого будет определяться
     
+    результатом будет id,  по которому можно найти результат запроса
+    '''
     try:
         result = model(text)
         
@@ -42,20 +43,26 @@ async def predict_model(text: str):
             sentiment=result.label,
             confidence=result.score
         )
-        result_id = str(uuid.uuid4())
-        result_storage[result_id] = {
-            'text': text,
-            'status': 'completed',
-            'name': result.name
-        }
-        return response
+        
+        result_id = str(len(response_storage) + 1)
+        response_storage[result_id] = response
+        
+        return ModelStatus(
+            result_id=result_id
+        )
     except Exception as e:
         raise HTTPException(status_code=0, detail=f"Error in predict model: {str(e)}")
 
-@app.get('/status', response_model=ModelStatus)
-async def model_status():
-    status = 'ready' if model is not None else 'not loaded'
-    return ModelStatus(
-        status=status,
-        model_name=getattr(model, 'name', None),
-    )
+@app.get('/status', response_model=SentimentResponse, summary='Резлуьтат модели')
+async def model_status(result_id: str):
+    '''
+    Вывод результат модели
+    
+    **result_id**: ид запроса
+    '''
+    if result_id not in response_storage:
+        raise HTTPException(
+            status_code=404,
+            detail="Result not found"
+        )
+    return response_storage[result_id]
